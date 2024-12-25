@@ -1,89 +1,249 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/11.1.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/11.1.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/11.1.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-b from-blue-900 to-blue-600 text-white font-sans p-6">
+    <h1 class="text-4xl font-extrabold text-center text-yellow-300 mb-8">Sensor Dashboard</h1>
+
+    <div class="mb-8 text-center">
+        <select id="sensorSelect" class="p-3 rounded border border-yellow-400 bg-yellow-600 text-white focus:outline-none focus:ring-2 focus:ring-yellow-300 mr-4">
+            <option value="temperature">Temperature</option>
+            <option value="humidity">Humidity</option>
+            <option value="ldr">LDR</option>
+            <option value="moisture">Moisture</option>
+            <option value="ultrasonic">Ultrasonic</option>
+        </select>
+
+        <select id="visualizationSelect" class="p-3 rounded border border-yellow-400 bg-yellow-600 text-white focus:outline-none focus:ring-2 focus:ring-yellow-300 mr-4">
+            <option value="table">Table</option>
+            <option value="chart">Chart</option>
+        </select>
+
+        <button onclick="setActiveSensor()" class="p-3 rounded bg-yellow-500 text-white hover:bg-yellow-400 transform transition-transform hover:scale-110 mr-4">
+            Set Active Sensor
+        </button>
+        <button onclick="stopPolling()" id="stopReadingButton" class="p-3 rounded bg-red-500 text-white hidden transform transition-transform hover:scale-110">
+            Stop Reading
+        </button>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+
+    <h2 class="text-2xl font-semibold text-center text-yellow-300 mb-4">Sensor Data</h2>
+
+    <div id="sensorData" class="bg-yellow-600 p-6 rounded shadow-lg text-center mb-8">
+        No data available.
+    </div>
+
+    <div id="exportButtonContainer" class="text-center mb-8">
+        <button id="exportCSVButton" onclick="exportTableToCSV()" class="p-3 rounded bg-green-500 text-white hidden hover:bg-green-400 transform transition-transform hover:scale-110">
+            Export Table to CSV
+        </button>
+        <button id="exportChartButton" onclick="exportChartImage()" class="p-3 rounded bg-green-500 text-white hidden hover:bg-green-400 transform transition-transform hover:scale-110">
+            Export Chart as Image
+        </button>
+    </div>
+
+    <div class="chart-container max-w-4xl mx-auto bg-yellow-600 p-6 rounded shadow-lg" id="chartContainer" style="display: none;">
+        <canvas id="sensorChart"></canvas>
+    </div>
 
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+        let updateInterval;
+let chart;
+let currentData = [];
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+function setActiveSensor() {
+    const sensor = document.getElementById('sensorSelect').value;
+    const visualizationMode = document.getElementById('visualizationSelect').value;
+
+    fetch('/select-sensor', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ sensor, mode: visualizationMode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data.message);
+        fetchSensorData();
+        startPolling();
+        document.getElementById('stopReadingButton').style.display = 'inline-block';
+    })
+    .catch(err => {
+        console.error('Error setting active sensor:', err);
+    });
+}
+
+function stopPolling() {
+    clearInterval(updateInterval);
+    document.getElementById('stopReadingButton').style.display = 'none';
+}
+
+function fetchSensorData() {
+    fetch('/get-data')
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('sensorData').innerText = 'Error: ' + data.error;
+        } else {
+            const limitedData = data.data.slice(-5000);
+            displaySensorData(limitedData);
         }
-      });
+    })
+    .catch(err => {
+        document.getElementById('sensorData').innerText = 'Error fetching data.';
+        console.error('Error fetching data:', err);
+    });
+}
+
+function displaySensorData(data) {
+    const container = document.getElementById('sensorData');
+    const chartContainer = document.getElementById('chartContainer');
+    const canvas = document.getElementById('sensorChart');
+
+    if (data.length === 0) {
+        container.innerHTML = 'No data available.';
+        chartContainer.style.display = 'none';
+        return;
+    }
+
+    const reversedData = [...data].reverse();
+    const visualizationMode = document.getElementById('visualizationSelect').value;
+
+    // Hide both table and chart initially
+    document.getElementById('sensorData').style.display = 'none';
+    chartContainer.style.display = 'none';
+
+    if (visualizationMode === 'table') {
+        displayTable(reversedData);
+    } else if (visualizationMode === 'chart') {
+        displayChart(reversedData);
+    }
+
+    updateExportButtons();
+}
+
+function displayTable(data) {
+    const container = document.getElementById('sensorData');
+    let html = '<table id="dataTable" class="display"><thead><tr><th>S.No.</th><th>Time</th><th>Value</th></tr></thead><tbody>';
+    data.forEach((item, index) => {
+        html += `<tr><td>${index + 1}</td><td>${item.time}</td><td>${item.value}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    container.style.display = 'block';
+
+    $('#dataTable').DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        responsive: true
+    });
+}
+
+function displayChart(data) {
+    const container = document.getElementById('chartContainer');
+    const canvas = document.getElementById('sensorChart');
+    const labels = data.map(item => item.time);
+    const values = data.map(item => item.value);
+
+    container.style.display = 'block';
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    chart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Sensor Data',
+                data: values,
+                borderColor: '#FF204E',
+                backgroundColor: 'rgba(255, 32, 78, 0.2)',
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#A0153E'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time',
+                        color: '#fff'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Value',
+                        color: '#fff'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateExportButtons() {
+    const visualizationMode = document.getElementById('visualizationSelect').value;
+    document.getElementById('exportCSVButton').style.display = visualizationMode === 'table' ? 'inline-block' : 'none';
+    document.getElementById('exportChartButton').style.display = visualizationMode === 'chart' ? 'inline-block' : 'none';
+}
+
+function exportTableToCSV() {
+    const table = document.getElementById('dataTable');
+    const rows = table.querySelectorAll('tr');
+    const csvData = [];
+    rows.forEach(row => {
+        const rowData = [];
+        const cells = row.querySelectorAll('td, th');
+        cells.forEach(cell => rowData.push(cell.innerText));
+        csvData.push(rowData.join(','));
+    });
+
+    const csv = csvData.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    saveAs(blob, 'sensor_data.csv');
+}
+
+function exportChartImage() {
+    const imageUrl = chart.toBase64Image();
+    const a = document.createElement('a');
+    a.href = imageUrl;
+    a.download = 'sensor_data_chart.png';
+    a.click();
+}
+
+function startPolling() {
+    updateInterval = setInterval(fetchSensorData, 5000);
+}
+
+function clearData() {
+    clearInterval(updateInterval);
+    document.getElementById('sensorData').innerText = 'No data available.';
+    document.getElementById('chartContainer').style.display = 'none';
+    document.getElementById('sensorData').style.display = 'none';
+}
+// Add your JavaScript code here (unchanged)
     </script>
-  </body>
+</body>
 </html>
