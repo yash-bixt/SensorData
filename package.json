@@ -10,7 +10,11 @@
     "firebase": "^11.1.0",
     "firebase-admin": "^13.0.2"
   },
+<<<<<<< HEAD
   "scripts": {
+=======
+ "scripts": {
+>>>>>>> 99771be6f46cd089384dd25fc1b574948a09af33
   "start": "node server.js",  
   "dev": "node server.js"    
 }
