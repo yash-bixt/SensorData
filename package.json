@@ -9,8 +9,9 @@
     "firebase": "^11.1.0",
     "firebase-admin": "^13.0.2"
   },
-  "scripts": {
-    "start": "node server.js",  
-    "dev": "next dev"          
-  }
+ "scripts": {
+  "start": "node server.js",  
+  "dev": "node server.js"    
+}
+
 }
